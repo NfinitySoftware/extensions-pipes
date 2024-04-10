@@ -61,12 +61,6 @@ public async Task ExecutePipelineAsync(string userName, string firstName, string
         .PipeAsync(() => SetUserSecurityAsync(userName, firstName, lastName, email))
         .OnFailAsync(() => DeleteUserSecurityAsync(userName));
 
-    //BUT THIS WILL NOT WORK due to how async methods are immediately invoked
-    var createUserTask = CreateUserAsync(userName, firstName, lastName, email);
-    result = await createUserAction
-        .PipeAsync(() => SetUserSecurityAsync(userName, firstName, lastName, email))
-        .OnFailAsync(() => DeleteUserSecurityAsync(userName));
-
     //Conditional code based on the aggregated result
     if (!result.IsSuccess())
     {
