@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34723.18
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nfinity.Extensions.Pipes", "Nfinity.Extensions.Pipes\Nfinity.Extensions.Pipes.csproj", "{22D97994-0F1B-4BEA-B3AF-5DE823E74BD4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nfinity.Extensions.Pipes.Test", "Nfinity.Extensions.Pipes.Test\Nfinity.Extensions.Pipes.Test.csproj", "{20D76BBD-DA92-4A87-A7BC-27C38F7F5B34}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{22D97994-0F1B-4BEA-B3AF-5DE823E74BD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22D97994-0F1B-4BEA-B3AF-5DE823E74BD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22D97994-0F1B-4BEA-B3AF-5DE823E74BD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22D97994-0F1B-4BEA-B3AF-5DE823E74BD4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{20D76BBD-DA92-4A87-A7BC-27C38F7F5B34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20D76BBD-DA92-4A87-A7BC-27C38F7F5B34}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20D76BBD-DA92-4A87-A7BC-27C38F7F5B34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20D76BBD-DA92-4A87-A7BC-27C38F7F5B34}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C393064F-4F71-4EE1-B65C-1965353748DB}
+	EndGlobalSection
+EndGlobal
