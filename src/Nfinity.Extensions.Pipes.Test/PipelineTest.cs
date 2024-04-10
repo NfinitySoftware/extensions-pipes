@@ -112,9 +112,7 @@ namespace Nfinity.Extensions.Pipes.Test
             Assert.AreEqual(1, result.Results.Count);
 
             Assert.IsNotNull(result.FailActionResults);
-            Assert.IsNotNull(result.FailActionTasks);
             Assert.AreEqual(1, result.FailActionResults.Count);
-            Assert.AreEqual(1, result.FailActionTasks.Count);
             
             Assert.AreEqual(0, firstResult, "Expected the fail action to reset the value");
         }
@@ -132,9 +130,7 @@ namespace Nfinity.Extensions.Pipes.Test
             Assert.AreEqual(1, result.Results.Count);
 
             Assert.IsNotNull(result.FailActionResults);
-            Assert.IsNotNull(result.FailActionTasks);
             Assert.AreEqual(1, result.FailActionResults.Count);
-            Assert.AreEqual(1, result.FailActionTasks.Count);
 
             Assert.AreEqual(0, firstResult, "Expected the fail action to reset the value");
         }
@@ -159,9 +155,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             Assert.AreEqual(3, result.FailActions.Count);
             Assert.IsNotNull(result.FailActionResults);
-            Assert.IsNotNull(result.FailActionTasks);
             Assert.AreEqual(1, result.FailActionResults.Count);
-            Assert.AreEqual(1, result.FailActionTasks.Count);
 
             Assert.AreEqual(6, firstResult);
             Assert.AreEqual(10, secondResult);
@@ -188,9 +182,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             Assert.AreEqual(3, result.FailActions.Count);
             Assert.IsNotNull(result.FailActionResults);
-            Assert.IsNotNull(result.FailActionTasks);
             Assert.AreEqual(3, result.FailActionResults.Count);
-            Assert.AreEqual(3, result.FailActionTasks.Count);
 
             Assert.AreEqual(0, firstResult, "Expected the fail action to reset the value");
             Assert.AreEqual(0, secondResult, "Expected the fail action to reset the value");
@@ -217,9 +209,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             Assert.AreEqual(3, result.FailActions.Count);
             Assert.IsNotNull(result.FailActionResults);
-            Assert.IsNotNull(result.FailActionTasks);
             Assert.AreEqual(2, result.FailActionResults.Count);
-            Assert.AreEqual(2, result.FailActionTasks.Count);
 
             Assert.AreEqual(0, firstResult, "Expected the fail action to reset the value");
             Assert.AreEqual(0, secondResult, "Expected the fail action to reset the value");
@@ -245,9 +235,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             Assert.AreEqual(2, result.FailActions.Count);
             Assert.IsNotNull(result.FailActionResults);
-            Assert.IsNotNull(result.FailActionTasks);
             Assert.AreEqual(1, result.FailActionResults.Count);
-            Assert.AreEqual(1, result.FailActionTasks.Count);
 
             Assert.AreEqual(6, firstResult);
             Assert.AreEqual(0, secondResult, "Expected the fail action to reset the value");
@@ -273,7 +261,6 @@ namespace Nfinity.Extensions.Pipes.Test
 
             Assert.AreEqual(2, result.FailActions.Count);
             Assert.IsNull(result.FailActionResults);
-            Assert.IsNull(result.FailActionTasks);
 
             Assert.AreEqual(6, firstResult);
             Assert.AreEqual(10, secondResult);
@@ -299,7 +286,6 @@ namespace Nfinity.Extensions.Pipes.Test
 
             Assert.AreEqual(2, result.FailActions.Count);
             Assert.IsNull(result.FailActionResults);
-            Assert.IsNull(result.FailActionTasks);
 
             Assert.AreEqual(6, firstResult);
             Assert.AreEqual(10, secondResult);

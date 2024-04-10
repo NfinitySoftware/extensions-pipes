@@ -13,6 +13,8 @@ namespace Nfinity.Extensions.Pipes
         public HttpStatusCode HttpStatusCode { get; init; }
         public bool IsRetryable { get; init; }
 
+        //DVS: add data prop
+
         public static OperationResult Success()
             => _success;
 

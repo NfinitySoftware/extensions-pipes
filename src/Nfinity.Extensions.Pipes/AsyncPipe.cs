@@ -1,4 +1,6 @@
-﻿namespace Nfinity.Extensions.Pipes
+﻿using System.Threading.Tasks;
+
+namespace Nfinity.Extensions.Pipes
 {
     public static class AsyncPipe
     {
@@ -18,10 +20,17 @@
             return result;
         }
 
-        internal static async Task ExecuteAsync(PipedOperationResult result, Func<Task<OperationResult>> getAsyncOperation)
+        internal static async Task ExecuteAsync(PipedOperationResult result, Func<Task<OperationResult>> asyncOperation)
         {
-            var (task, operationResult) = await ExecuteAsync(getAsyncOperation);
-            result.PushResult(operationResult, task);
+            var operationResult = await ExecuteAsync(asyncOperation);
+            result.PushResult(operationResult);
+        }
+
+        internal static async Task ExecuteAsync(PipedOperationResult result, Func<OperationResult, Task<OperationResult>> asyncOperation)
+        {
+            var lastResult = result.GetLastResult();
+            var operationResult = await ExecuteAsync(asyncOperation, lastResult);
+            result.PushResult(operationResult);
         }
 
         internal static async Task ExecuteFailActionAsync(PipedOperationResult result)
@@ -30,11 +39,26 @@
 
             var onlyFailLast = result.Options.ShouldOnlyFailLast;
             var lastIndex = result.FailActions.Count - 1;
+            var resultStack = new Stack<OperationResult>(result.Results);
 
             for (var i = lastIndex; i >= 0; i--)
             {
-                var (task, operationResult) = await ExecuteAsync(result.FailActions[i]);
-                result.PushFailActionResult(operationResult, task);
+                var failAction = result.FailActions[i];
+                if (failAction.HasRun) continue;
+
+                if (failAction.Action != null)
+                {
+                    var failOperationResult = await ExecuteAsync(failAction.Action);
+                    result.PushFailActionResult(failOperationResult);
+                }
+                else if (failAction.ActionWithResultArg != null)
+                {
+                    resultStack.TryPop(out var operationResult);
+                    var failOperationResult = await ExecuteAsync(failAction.ActionWithResultArg, operationResult);
+                    result.PushFailActionResult(failOperationResult);
+                }
+
+                failAction.HasRun = true;
 
                 if (i == lastIndex && onlyFailLast) break;
             }
@@ -44,39 +68,58 @@
 
         internal static async Task ExecuteFinallyAsync(PipedOperationResult result, Func<Task> final)
         {
-            var (task, operationResult) = await ExecuteAsync(final);
-            result.FinalResult = operationResult;
+            result.FinalResult = await ExecuteAsync(final);
         }
 
-        private static async Task<(Task<OperationResult>, OperationResult)> ExecuteAsync(Func<Task<OperationResult>> getAsyncOperation)
+        private static async Task<OperationResult> ExecuteAsync(Func<Task<OperationResult>> asyncOperation)
         {
-            var task = (Task<OperationResult>)null;
-
             try
             {
-                task = getAsyncOperation();
-                var result = await task;
-                return (task, result);
+                var result = await asyncOperation();
+                return result;
             }
             catch (Exception ex)
             {
-                return (task, OperationResult.Fail(OperationFailedMessage, ex));
+                return OperationResult.Fail(OperationFailedMessage, ex);
             }
         }
 
-        private static async Task<(Task, OperationResult)> ExecuteAsync(Func<Task> getAsyncOperation)
+        private static async Task<OperationResult> ExecuteAsync(Func<OperationResult, Task<OperationResult>> asyncOperation, OperationResult lastResult)
         {
-            var task = (Task)null;
-
             try
             {
-                task = getAsyncOperation();
-                await task;
-                return (task, OperationResult.Success());
+                var result = await asyncOperation(lastResult);
+                return result;
             }
             catch (Exception ex)
             {
-                return (task, OperationResult.Fail(OperationFailedMessage, ex));
+                return OperationResult.Fail(OperationFailedMessage, ex);
+            }
+        }
+
+        private static async Task<OperationResult> ExecuteAsync(Func<Task> asyncOperation)
+        {
+            try
+            {
+                await asyncOperation();
+                return OperationResult.Success();
+            }
+            catch (Exception ex)
+            {
+                return OperationResult.Fail(OperationFailedMessage, ex);
+            }
+        }
+
+        private static async Task<OperationResult> ExecuteAsync(Func<OperationResult, Task> asyncOperation, OperationResult lastResult)
+        {
+            try
+            {
+                await asyncOperation(lastResult);
+                return OperationResult.Success();
+            }
+            catch (Exception ex)
+            {
+                return OperationResult.Fail(OperationFailedMessage, ex);
             }
         }
     }

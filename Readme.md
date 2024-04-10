@@ -6,26 +6,26 @@
 - [License](#license)
 
 ### What is Extensions.Pipes?
-*Extensions.Pipes* provides a mechanism for asynchronous pipeline processing in .NET, allowing you to combine multiple method calls into a single pipeline. This is usually provided by the `|` operator in many functional languages, but *Extensions.Pipes* provides a mechanism reminiscent of LINQ to achieve the same.
+*Extensions.Pipes* provides a mechanism for asynchronous pipeline processing in .NET, allowing multiple method calls to be combined into a single pipeline. This is usually provided by the `|` operator in many functional languages, but *Extensions.Pipes* provides a mechanism reminiscent of LINQ to achieve the same.
 
 #### Main features:
-- Method calls can be chained, where each call is dependent on the success of each previous call.
-- Piped methods can be followed by piped failure actions that are automatically called should its associated method fail.
-- The behavior of the internal handling of pipeline failure actions can be customised. 
-- A `finally` action can be specified, similar to the *try-catch-finally* construct, and which is called whether pipeline actions succeed or fail.
-- An aggregate result is made available as the result of the pipeline. Conditional code can be written based on the overall success or failure of the pipeline.
+- Method calls can be chained. The invocation of each method is dependent on the success of its predecessor.
+- Piped methods can be followed by piped failure actions, which are automatically invoked should its associated method fail.
+- The behavior of the invocation of pipeline failure actions can be customised. Briefly, the options are: invoke only the last failure action (the default); invoke all specified failure actions up the stack.
+- A `finally` action can be specified, completing a *try-catch-finally* construct in the pipeline, and which is always invoked whether pipeline actions succeed or fail.
+- An aggregate result is made available as the result of the pipeline, and conditional code can be written based on its overall success or failure.
 
 ### Why use Extensions.Pipes?
-- Provides a standard and reliable mechanism for executing multiple operations, where each depends on the success of its predecessor.
-- Provides a standard way to aggregate the result of multiple, dependent operations, and act on them once the pipeline is complete.
-- Massively reduces the amount of code required to achieve the same thing, if written out manually.
-- Helps maintain clean code principles.
+- Massively reduce the amount of code required to reliably execute multiple methods in succession, where each is dependent on the success of its predecessor.
+- Take advantage of a standardised way to aggregate the result of multiple, dependent operations, and act on them once all are complete.
+- Maintain clean code principles, especially in complex scenario method chaining.
 
 ### Using Extensions.Pipes
->> Notes:
->>  - Use of Extensions.Pipes is based on use of the `OperationResult` type. Each chained method should return `Task<OperationResult>`.
->>  - It's recommended that chained methods do not throw exceptions, but rather return an `OperationResult` instance using `OperationResult.Fail(..)`.
+> Notes:
+>- Use of Extensions.Pipes is based on use of the `OperationResult` type. Each chained method should return `Task<OperationResult>`.
+>  - It's recommended that chained methods do not throw exceptions, but rather return an `OperationResult` instance using `OperationResult.Fail(..)`.
 
+#### Examples:
 ```csharp
 public async Task ExecutePipelineAsync(string userName, string firstName, string lastName, string email)
 {

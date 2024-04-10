@@ -1,5 +1,4 @@
 ﻿using Nfinity.Extensions.Pipes.Extensions;
-using System.Net;
 
 namespace Nfinity.Extensions.Pipes
 {
@@ -27,6 +26,15 @@ namespace Nfinity.Extensions.Pipes
             return pipedResult;
         }
 
+        public static async Task<PipedOperationResult> PipeAsync(this Task<PipedOperationResult> result, Func<OperationResult, Task<OperationResult>> next)
+        {
+            var pipedResult = await result;
+            if (!pipedResult.IsSuccess()) return pipedResult;
+
+            await AsyncPipe.ExecuteAsync(pipedResult, next);
+            return pipedResult;
+        }
+
         public static async Task<PipedOperationResult> OnFailAsync(this Task<PipedOperationResult> result, Func<Task> onFail)
         {
             var pipedResult = await result;
@@ -34,6 +42,17 @@ namespace Nfinity.Extensions.Pipes
             pipedResult.PushFailAction(onFail);
             if (pipedResult.IsSuccess()) return pipedResult;
             
+            await AsyncPipe.ExecuteFailActionAsync(pipedResult);
+            return pipedResult;
+        }
+
+        public static async Task<PipedOperationResult> OnFailAsync(this Task<PipedOperationResult> result, Func<OperationResult, Task> onFail)
+        {
+            var pipedResult = await result;
+
+            pipedResult.PushFailAction(onFail);
+            if (pipedResult.IsSuccess()) return pipedResult;
+
             await AsyncPipe.ExecuteFailActionAsync(pipedResult);
             return pipedResult;
         }

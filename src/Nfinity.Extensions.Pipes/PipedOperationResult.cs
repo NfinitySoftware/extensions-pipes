@@ -7,19 +7,16 @@
         private readonly List<OperationResult> _results = [];
         public IReadOnlyList<OperationResult> Results => _results;
 
-        private List<Func<Task>> _failActions;
-        public IReadOnlyList<Func<Task>> FailActions => _failActions;
-
         private List<OperationResult> _failActionResults;
         public IReadOnlyList<OperationResult> FailActionResults => _failActionResults;
 
-        private List<Task> _failActionTasks;
-        public IReadOnlyList<Task> FailActionTasks => _failActionTasks;
+        public OperationResult FinalResult { get; internal set; }
+
+        private List<FailAction> _failActions;
+        internal IReadOnlyList<FailAction> FailActions => _failActions;
 
         private Func<Task> _finalAction;
-        public Func<Task> FinalAction => _finalAction;
-
-        public OperationResult FinalResult { get; internal set; }
+        internal Func<Task> FinalAction => _finalAction;
 
         internal bool HasExecutedFailActions { get; set; }
 
@@ -45,31 +42,41 @@
         public bool IsSuccess()
             => _results.LastOrDefault()?.IsSuccess ?? true;
 
-        internal void PushResult(OperationResult result, Task<OperationResult> task)
+        internal OperationResult GetLastResult()
+            => _results.Count > 0 ? _results[^1] : null;
+
+        internal void PushResult(OperationResult result)
             => _results.Add(result);
 
-        internal void PushFailActionResult(OperationResult result, Task task)
+        internal void PushFailActionResult(OperationResult result)
         {
-            if (_failActionResults == null)
-            {
-                _failActionResults = [];
-                _failActionTasks = [];
-            }
-
+            _failActionResults ??= [];
             _failActionResults.Add(result);
-            _failActionTasks.Add(task);
         }
 
         internal void PushFailAction(Func<Task> action)
         {
             _failActions ??= [];
-            _failActions.Add(action);
+            _failActions.Add(new FailAction { Action = action });
+        }
+
+        internal void PushFailAction(Func<OperationResult, Task> action)
+        {
+            _failActions ??= [];
+            _failActions.Add(new FailAction { ActionWithResultArg = action });
         }
 
         internal void PushFinalAction(Func<Task> final)
         {
             if (_finalAction != null) throw new InvalidOperationException("A finally action has already been specified");
             _finalAction = final;
+        }
+
+        internal class FailAction
+        {
+            public Func<Task> Action { get; init; }
+            public Func<OperationResult, Task> ActionWithResultArg { get; init; }
+            public bool HasRun { get; set; }
         }
     }
 }
