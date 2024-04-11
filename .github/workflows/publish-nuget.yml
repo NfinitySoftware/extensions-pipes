@@ -4,6 +4,12 @@
 name: Publish NuGet
 
 on: 
+    workflow_dispatch:
+      inputs:
+        version_suffix:
+          description: "Pre-release version suffix"
+          required: false
+          default: ''
     pull_request:
       branches: [ "master" ]
 
@@ -29,7 +35,7 @@ jobs:
           --no-build
           --configuration Release
           --verbosity normal
-    - name: Test
+    - name: Pack
       run: dotnet pack src/Nfinity.Extensions.Pipes/Nfinity.Extensions.Pipes.csproj
           --no-build
           --configuration Release
