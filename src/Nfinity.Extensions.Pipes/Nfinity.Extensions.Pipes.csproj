@@ -21,7 +21,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\LICENSE.txt" Pack="true" PackagePath="" />
+		<None Include="..\..\LICENSE.txt" Pack="true" PackagePath="">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 	
 	<ItemGroup>
