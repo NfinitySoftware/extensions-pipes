@@ -19,6 +19,11 @@ jobs:
     - name: Restore
       run: dotnet restore src/Nfinity.Extensions.Pipes.sln      
     - name: Build
-      run: dotnet build src/Nfinity.Extensions.Pipes.sln --no-restore --configuration Release
+      run: dotnet build src/Nfinity.Extensions.Pipes.sln |
+        --no-restore |
+        --configuration Release
     - name: Test
-      run: dotnet test src/Nfinity.Extensions.Pipes.sln --no-build --verbosity normal
+      run: dotnet test src/Nfinity.Extensions.Pipes.Test |
+        --no-build |
+        --configuration Release |
+        --verbosity normal
