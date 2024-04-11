@@ -44,7 +44,7 @@ namespace Nfinity.Extensions.Pipes
             for (var i = lastIndex; i >= 0; i--)
             {
                 var failAction = result.FailActions[i];
-                if (failAction.HasRun) continue;
+                if (failAction.IsEmpty) continue;
 
                 if (failAction.Action != null)
                 {
@@ -57,8 +57,6 @@ namespace Nfinity.Extensions.Pipes
                     var failOperationResult = await ExecuteAsync(failAction.ActionWithResultArg, operationResult);
                     result.PushFailActionResult(failOperationResult);
                 }
-
-                failAction.HasRun = true;
 
                 if (i == lastIndex && onlyFailLast) break;
             }

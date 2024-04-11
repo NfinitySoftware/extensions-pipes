@@ -1,4 +1,6 @@
-﻿namespace Nfinity.Extensions.Pipes
+﻿using System;
+
+namespace Nfinity.Extensions.Pipes
 {
     public sealed class PipedOperationResult
     {
@@ -12,7 +14,7 @@
 
         public OperationResult FinalResult { get; internal set; }
 
-        private List<FailAction> _failActions;
+        private List<FailAction> _failActions = [];
         internal IReadOnlyList<FailAction> FailActions => _failActions;
 
         private Func<Task> _finalAction;
@@ -46,7 +48,10 @@
             => _results.Count > 0 ? _results[^1] : null;
 
         internal void PushResult(OperationResult result)
-            => _results.Add(result);
+        {
+            _results.Add(result);
+            _failActions.Add(FailAction.Empty);
+        }
 
         internal void PushFailActionResult(OperationResult result)
         {
@@ -55,16 +60,10 @@
         }
 
         internal void PushFailAction(Func<Task> action)
-        {
-            _failActions ??= [];
-            _failActions.Add(new FailAction { Action = action });
-        }
+            => PushFailAction(new FailAction(action));
 
         internal void PushFailAction(Func<OperationResult, Task> action)
-        {
-            _failActions ??= [];
-            _failActions.Add(new FailAction { ActionWithResultArg = action });
-        }
+            => PushFailAction(new FailAction(action));
 
         internal void PushFinalAction(Func<Task> final)
         {
@@ -72,11 +71,34 @@
             _finalAction = final;
         }
 
+        private void PushFailAction(FailAction failAction)
+        {
+            var index = _failActions.Count > 0 ? _failActions.Count - 1 : 0;
+            _failActions[index] = failAction;
+        }
+
         internal class FailAction
         {
+            public readonly static FailAction Empty = new();
+
+            public bool IsEmpty { get; }
             public Func<Task> Action { get; init; }
             public Func<OperationResult, Task> ActionWithResultArg { get; init; }
-            public bool HasRun { get; set; }
+
+            private FailAction()
+            {
+                IsEmpty = true;
+            }
+
+            public FailAction(Func<Task> action)
+            {
+                Action = action;
+            }
+
+            public FailAction(Func<OperationResult, Task> actionWithResultArg)
+            {
+                ActionWithResultArg = actionWithResultArg;
+            }
         }
     }
 }

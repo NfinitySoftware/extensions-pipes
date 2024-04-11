@@ -12,14 +12,25 @@ namespace Nfinity.Extensions.Pipes
         public Exception Exception { get; init; }
         public HttpStatusCode HttpStatusCode { get; init; }
         public bool IsRetryable { get; init; }
-
-        //DVS: add data prop
+        public object Data { get; init; }
 
         public static OperationResult Success()
             => _success;
 
-        public static OperationResult Fail(string reason, Exception exception = null, bool isRetryable = true, HttpStatusCode statusCode = HttpStatusCode.InternalServerError)
-            => new() { IsSuccess = false, FailureReason = reason, Exception = exception, IsRetryable = isRetryable, HttpStatusCode = statusCode };
+        public static OperationResult Success(object data)
+            => data == null ? _success : new() { IsSuccess = true, Data = data, HttpStatusCode = HttpStatusCode.OK };
+
+        public static OperationResult Fail(string reason, Exception exception = null, object data = null, 
+            bool isRetryable = true, HttpStatusCode statusCode = HttpStatusCode.InternalServerError)
+            => new() 
+            { 
+                IsSuccess = false,
+                FailureReason = reason, 
+                Exception = exception, 
+                Data = data, 
+                IsRetryable = isRetryable, 
+                HttpStatusCode = statusCode 
+            };
 
         public static OperationResult Resolve(params Task<OperationResult>[] tasks)
         {
