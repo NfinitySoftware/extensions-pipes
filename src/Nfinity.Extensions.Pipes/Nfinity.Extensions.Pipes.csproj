@@ -7,6 +7,19 @@
     <SignAssembly>True</SignAssembly>
   </PropertyGroup>
 
+	<PropertyGroup Label="NuGet">
+		<PackageId>Nfinity.Extensions.Pipes</PackageId>
+		<Title>Nfinity Extensions Pipes</Title>
+		<Authors>D.Vaughan-Scott</Authors>
+		<Authors>Nfinity Software</Authors>
+		<Description>A library that enables "pipelines" of functions in .NET.</Description>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<Copyright>© 2024 Nfinity Software</Copyright>
+		<PackageTags>C# Pipelines Functional Programming</PackageTags>
+		<VersionPrefix>1.0.0</VersionPrefix>
+	</PropertyGroup>
+	
 	<ItemGroup>
 		<InternalsVisibleTo Include="$(AssemblyName).Test" />	
 	</ItemGroup>

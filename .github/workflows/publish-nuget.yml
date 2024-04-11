@@ -1,0 +1,37 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: Publish NuGet
+
+on: 
+    pull_request:
+      branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x        
+    - name: Restore
+      run: dotnet restore src/Nfinity.Extensions.Pipes.sln      
+    - name: Build
+      run: dotnet build src/Nfinity.Extensions.Pipes.sln
+          --no-restore
+          --configuration Release
+    - name: Test
+      run: dotnet test src/Nfinity.Extensions.Pipes.Test
+          --no-build
+          --configuration Release
+          --verbosity normal
+    - name: Test
+      run: dotnet pack src/Nfinity.Extensions.Pipes/Nfinity.Extensions.Pipes.csproj
+          --no-build
+          --configuration Release
+          --verbosity normal
+          --version-suffix ${{ github.event.inputs.version_suffix }}
