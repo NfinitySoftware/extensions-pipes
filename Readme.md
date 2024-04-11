@@ -1,5 +1,7 @@
 ## Nfinity Extensions Pipes
 
+> This repo is still under test, and is not yet released. Proposed release is most likely before end of April 2024.
+
 - [What is Extensions.Pipes?](#what-is-extensionspipes)
 - [Why use Extensions.Pipes](#why-use-extensionspipes)?
 - [How can I use Extensions.Pipes](#using-extensionspipes)?
