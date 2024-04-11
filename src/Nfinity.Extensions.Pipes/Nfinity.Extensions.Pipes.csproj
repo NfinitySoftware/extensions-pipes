@@ -19,6 +19,10 @@
 		<PackageTags>C# Pipelines Functional Programming</PackageTags>
 		<VersionPrefix>1.0.0</VersionPrefix>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\LICENSE.txt" Pack="true" PackagePath="" />
+	</ItemGroup>
 	
 	<ItemGroup>
 		<InternalsVisibleTo Include="$(AssemblyName).Test" />	
