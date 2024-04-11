@@ -11,13 +11,13 @@
 #### Main features:
 - Method calls can be chained. The invocation of each method is dependent on the success of its predecessor.
 - Piped methods can be followed by piped failure actions, which are automatically invoked should its associated method fail.
-- The behavior of the invocation of pipeline failure actions can be customised. Briefly, the options are: invoke only the last failure action (the default); invoke all specified failure actions up the stack.
+- The behavior of the invocation of pipeline failure actions can be customised. [See the `PipeFailureBehavior` enumeration.](#pipefailurebehavior)
 - A `finally` action can be specified, completing a *try-catch-finally* construct in the pipeline, and which is always invoked whether pipeline actions succeed or fail.
 - An aggregate result is made available as the result of the pipeline, and conditional code can be written based on its overall success or failure.
 
 ### Why use Extensions.Pipes?
 - Massively reduce the amount of code required to reliably execute multiple methods in succession, where each is dependent on the success of its predecessor.
-- Simplify conditional code based on the individual results of multiple operations. This is done naturally via the pipeline mechanism, and also by using the aggregate result of the pipeline once complete, which indicates overall success.
+- Simplify conditional code based on the individual results of multiple operations. This is done naturally via the pipeline mechanism, and also by using the aggregate result of the pipeline once complete. This result indicates overall success.
 - Maintain clean code principles, especially in complex scenario method chaining.
 
 ### Using Extensions.Pipes
@@ -32,8 +32,8 @@ Methods chained in the pipeline should follow a logical order and progression. T
 
 The `PipeFailureBehavior` enumeration determines how failed actions are run in the pipeline, or rather *which* are run. There are two options:
 
-- `FailLastOnly`: only the failure action associated with the failed, piped method will be run. In the first example below, if `SetUserSecurityAsync` failed, only `DeleteUserSecurityAsync` would be called.
-- `FailAll`: all failure actions up the stack will be called in succession (from the last to the first). Again, in the first example below, if `SetUserSecurityAsync` failed, `DeleteUserSecurityAsync` would be called, then `DeleteUserAsync`.
+- `FailLastOnly`: The default behavior. Only the failure action associated with the failed, piped method will be run. In the first example below, if `SetUserSecurityAsync` failed, only `DeleteUserSecurityAsync` would be called.
+- `FailAll`: All failure actions up the stack will be called in succession (from the last to the first). Again, in the first example below, if `SetUserSecurityAsync` failed, `DeleteUserSecurityAsync` would be called, then `DeleteUserAsync`.
 
 #### Examples:
 ```csharp
