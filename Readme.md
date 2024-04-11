@@ -17,49 +17,57 @@
 
 ### Why use Extensions.Pipes?
 - Massively reduce the amount of code required to reliably execute multiple methods in succession, where each is dependent on the success of its predecessor.
-- Take advantage of a standardised way to aggregate the result of multiple, dependent operations, and act on them once all are complete.
+- Simplify conditional code based on the individual results of multiple operations. This is done naturally via the pipeline mechanism, and also by using the aggregate result of the pipeline once complete, which indicates overall success.
 - Maintain clean code principles, especially in complex scenario method chaining.
 
 ### Using Extensions.Pipes
-> Notes:
->- Use of Extensions.Pipes is based on use of the `OperationResult` type. Each chained method should return `Task<OperationResult>`.
->  - It's recommended that chained methods do not throw exceptions, but rather return an `OperationResult` instance using `OperationResult.Fail(..)`.
+#### Notes
+Use of Extensions.Pipes is based on use of the `OperationResult` type. Each chained method should return `Task<OperationResult>`.
+
+It's recommended that chained methods do not throw exceptions, but rather return an `OperationResult` instance using `OperationResult.Fail(..)`. More useful information can be returned from methods in this way.
+
+Methods chained in the pipeline should follow a logical order and progression. Typically, starting a pipeline is done via the `AsyncPipe.Start` method, followed by multiple `PipeAsync` calls, and perhaps a call to `Finally`. Any failure actions should be chained directly after the piped method they are intended to handle. See the first example below.
+
+#### `PipeFailureBehavior`
+
+The `PipeFailureBehavior` enumeration determines how failed actions are run in the pipeline, or rather *which* are run. There are two options:
+
+- `FailLastOnly`: only the failure action associated with the failed, piped method will be run. In the first example below, if `SetUserSecurityAsync` failed, only `DeleteUserSecurityAsync` would be called.
+- `FailAll`: all failure actions up the stack will be called in succession (from the last to the first). Again, in the first example below, if `SetUserSecurityAsync` failed, `DeleteUserSecurityAsync` would be called, then `DeleteUserAsync`.
 
 #### Examples:
 ```csharp
-public async Task ExecutePipelineAsync(string userName, string firstName, string lastName, string email)
+public async Task ExecutePipelineAsync(string userName, string fullName, string email)
 {
-    //PipeFailureBehavior.FailAll will execute all the specified failure actions, such that if 
-    //SetUserSecurityAsync fails, all failure actions up the stack will be called.
-    //If the same action failed, and PipeFailureBehavior.FailLastOnly was specified, only 
-    //DeleteUserSecurityAsync would be called.
-
+    //Example 1
     var result = await AsyncPipe
-        .Start(() => CreateUserAsync(userName, firstName, lastName, email), PipeFailureBehavior.FailAll)
+        .Start(() => CreateUserAsync(userName, fullName, email), PipeFailureBehavior.FailAll)
         .OnFailAsync(() => DeleteUserAsync(userName))
-        .PipeAsync(() => SetUserSecurityAsync(userName, firstName, lastName, email))
+        .PipeAsync(() => SetUserSecurityAsync(userName, fullName, email))
         .OnFailAsync(() => DeleteUserSecurityAsync(userName))
-        .Finally(() => CleanupTemporaryState(userName, firstName, lastName, email));
+        .Finally(() => CleanupTemporaryState(userName, fullName, email));
 
-    //It's also possible to specify one failure action for a pipeline, which will be called if any action fails.
+    //Example 2. It's also possible to specify one failure action for a pipeline, 
+    //which will be called if any action fails.
     result = await AsyncPipe
-        .Start(() => CreateUserAsync(userName, firstName, lastName, email), PipeFailureBehavior.FailAll)
-        .PipeAsync(() => SetUserSecurityAsync(userName, firstName, lastName, email))
+        .Start(() => CreateUserAsync(userName, fullName, email), PipeFailureBehavior.FailAll)
+        .PipeAsync(() => SetUserSecurityAsync(userName, fullName, email))
         .OnFailAsync(() => DeleteUserSecurityAsync(userName))
-        .Finally(() => CleanupTemporaryState(userName, firstName, lastName, email));
+        .Finally(() => CleanupTemporaryState(userName, fullName, email));
 
-    //And it doesn't matter in which order Finally is called. This is ok.
-    result = await AsyncPipe
-        .Start(() => CreateUserAsync(userName, firstName, lastName, email), PipeFailureBehavior.FailAll)
-        .Finally(() => CleanupTemporaryState(userName, firstName, lastName, email)) //Finally can be out of order
-        .PipeAsync(() => SetUserSecurityAsync(userName, firstName, lastName, email))
-        .OnFailAsync(() => DeleteUserSecurityAsync(userName));
-
-    //Could also declare the first action outside the pipe and use the extension methods to create the pipeline.
-    var createUserAction = () => CreateUserAsync(userName, firstName, lastName, email);
+    //Example 3. Could also declare the first action as a variable and use 
+    //the extension methods to create the pipeline.
+    var createUserAction = () => CreateUserAsync(userName, fullName, email);
     result = await createUserAction
-        .PipeAsync(() => SetUserSecurityAsync(userName, firstName, lastName, email))
+        .PipeAsync(() => SetUserSecurityAsync(userName, fullName, email))
         .OnFailAsync(() => DeleteUserSecurityAsync(userName));
+
+    //Example 4. It's also possible for each method to receive the result of its antededent.
+    //OperationResult has a Data property, which also allows passing of state to each method.
+    result = await AsyncPipe
+        .Start(() => CreateUserAsync(userName, fullName, email), PipeFailureBehavior.FailAll)
+        .PipeAsync(antecedent => SetUserSecurityAsync(userName, fullName, email, antecedent))
+        .Finally(() => CleanupTemporaryState(userName, fullName, email));
 
     //Conditional code based on the aggregated result
     if (!result.IsSuccess())
@@ -67,18 +75,25 @@ public async Task ExecutePipelineAsync(string userName, string firstName, string
         var failureState = result.GetFailureState();
         if (failureState.HttpStatusCode == System.Net.HttpStatusCode.Conflict)
         {
-            //do something when a user already exists by the given username
+            //do something, say, when a user already exists by the given username
         }
     }
 }
 
-private Task<OperationResult> CreateUserAsync(string userName, string firstName, string lastName, string email)
+private Task<OperationResult> CreateUserAsync(string userName, string fullName, string email)
     => Task.FromResult(OperationResult.Success());
 
-private Task<OperationResult> SetUserSecurityAsync(string userName, string firstName, string lastName, string email)
+private Task<OperationResult> SetUserSecurityAsync(string userName, string fullName, string email)
     => Task.FromResult(OperationResult.Fail("Saving user security failed."));
 
-private Task<OperationResult> CleanupTemporaryState(string userName, string firstName, string lastName, string email)
+private Task<OperationResult> SetUserSecurityAsync(string userName, string fullName, string email, 
+    OperationResult antecedentResult)
+{
+    //do something with antecedent result
+    return Task.FromResult(OperationResult.Success());
+}
+
+private Task<OperationResult> CleanupTemporaryState(string userName, string fullName, string email)
     => Task.FromResult(OperationResult.Success());
 
 private Task<OperationResult> DeleteUserAsync(string userName)

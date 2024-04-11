@@ -13,10 +13,11 @@ namespace Nfinity.Extensions.Pipes.Test
         {
             var firstResult = 0;
             var secondResult = 0;
+            var data = new object();
 
             var result = await AsyncPipe
-                .Start(() => AddAsync(2, 4, ref firstResult))
-                .PipeAsync(result => AddAsync(result, 3, 7, ref secondResult));
+                .Start(() => AddAsync(2, 4, ref firstResult, data: data))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, expectedAntecedentData: data));
 
             Assert.IsTrue(result.IsSuccess());
             Assert.AreEqual(6, firstResult);
@@ -32,7 +33,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var result = await AsyncPipe
                 .Start(() => AddAsync(2, 4, ref firstResult, data: data))
-                .PipeAsync(result => AddAsync(result, 3, 7, ref secondResult, expectedAntecedentData: data));
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, expectedAntecedentData: data));
 
             Assert.IsTrue(result.IsSuccess());
             Assert.AreEqual(6, firstResult);
@@ -45,11 +46,11 @@ namespace Nfinity.Extensions.Pipes.Test
             var firstResult = 0;
             var secondResult = 0;
             var thirdResult = 0;
-
+            
             var result = await AsyncPipe
                 .Start(() => AddAsync(2, 4, ref firstResult, fail: true))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult))
-                .PipeAsync(result => AddAsync(4, 8, ref thirdResult));
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult))
+                .PipeAsync(antecedent => AddAsync(antecedent, 4, 8, ref thirdResult));
 
             Assert.IsFalse(result.IsSuccess());
             Assert.AreEqual(1, result.Results.Count, "Expected only the successful results plus the last failed result to be present");
@@ -67,8 +68,8 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var result = await AsyncPipe
                 .Start(() => AddAsync(2, 4, ref firstResult, throwException: true))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult))
-                .PipeAsync(result => AddAsync(4, 8, ref thirdResult));
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult))
+                .PipeAsync(antecedent => AddAsync(antecedent, 4, 8, ref thirdResult));
 
             Assert.IsFalse(result.IsSuccess());
             Assert.AreEqual(1, result.Results.Count, "Expected only the successful results plus the last failed result to be present");
@@ -83,11 +84,12 @@ namespace Nfinity.Extensions.Pipes.Test
             var firstResult = 0;
             var secondResult = 0;
             var thirdResult = 0;
+            var data = new object();
 
             var result = await AsyncPipe
-                .Start(() => AddAsync(2, 4, ref firstResult))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult, fail: true))
-                .PipeAsync(result => AddAsync(4, 8, ref thirdResult));
+                .Start(() => AddAsync(2, 4, ref firstResult, data: data))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, fail: true, expectedAntecedentData: data))
+                .PipeAsync(antecedent => AddAsync(antecedent, 4, 8, ref thirdResult));
 
             Assert.IsFalse(result.IsSuccess());
             Assert.AreEqual(2, result.Results.Count, "Expected only the successful results plus the last failed result to be present");
@@ -102,11 +104,12 @@ namespace Nfinity.Extensions.Pipes.Test
             var firstResult = 0;
             var secondResult = 0;
             var thirdResult = 0;
+            var data = new object();
 
             var result = await AsyncPipe
-                .Start(() => AddAsync(2, 4, ref firstResult))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult, throwException: true))
-                .PipeAsync(result => AddAsync(4, 8, ref thirdResult));
+                .Start(() => AddAsync(2, 4, ref firstResult, data: data))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, throwException: true, expectedAntecedentData: data))
+                .PipeAsync(antecedent => AddAsync(antecedent, 4, 8, ref thirdResult));
 
             Assert.IsFalse(result.IsSuccess());
             Assert.AreEqual(2, result.Results.Count, "Expected only the successful results plus the last failed result to be present");
@@ -122,7 +125,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var result = await AsyncPipe
                 .Start(() => AddAsync(2, 4, ref firstResult, fail: true))
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult, expectAntecedentSuccess: false));
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult, expectAntecedentSuccess: false));
 
             Assert.IsFalse(result.IsSuccess());
             Assert.AreEqual(1, result.Results.Count);
@@ -141,7 +144,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var result = await AsyncPipe
                 .Start(() => AddAsync(2, 4, ref firstResult, throwException: true))
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult, expectAntecedentSuccess: false));
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult, expectAntecedentSuccess: false));
 
             Assert.IsFalse(result.IsSuccess());
             Assert.AreEqual(1, result.Results.Count);
@@ -159,14 +162,16 @@ namespace Nfinity.Extensions.Pipes.Test
             var firstResult = 0;
             var secondResult = 0;
             var thirdResult = 0;
+            var dataA = new object();
+            var dataB = new object();
 
             var result = await AsyncPipe
-                .Start(() => AddAsync(2, 4, ref firstResult))
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult))
-                .OnFailAsync(result => ResetAsync(result, 0, ref secondResult))
-                .PipeAsync(result => AddAsync(4, 8, ref thirdResult, throwException: true))
-                .OnFailAsync(result => ResetAsync(result, 0, ref thirdResult, expectAntecedentSuccess: false));
+                .Start(() => AddAsync(2, 4, ref firstResult, data: dataA))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, data: dataB, expectedAntecedentData: dataA))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult))
+                .PipeAsync(antecedent => AddAsync(antecedent, 4, 8, ref thirdResult, throwException: true, expectedAntecedentData: dataB))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref thirdResult, expectAntecedentSuccess: false));
 
             Assert.IsFalse(result.IsSuccess());
             Assert.AreEqual(3, result.Results.Count);
@@ -187,14 +192,16 @@ namespace Nfinity.Extensions.Pipes.Test
             var firstResult = 0;
             var secondResult = 0;
             var thirdResult = 0;
+            var dataA = new object();
+            var dataB = new object();
 
             var result = await AsyncPipe
-                .Start(() => AddAsync(2, 4, ref firstResult), PipeFailureBehavior.FailAll)
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult))
-                .OnFailAsync(result => ResetAsync(result, 0, ref secondResult))
-                .PipeAsync(result => AddAsync(4, 8, ref thirdResult, throwException: true))
-                .OnFailAsync(result => ResetAsync(result, 0, ref thirdResult, expectAntecedentSuccess: false));
+                .Start(() => AddAsync(2, 4, ref firstResult, data: dataA), PipeFailureBehavior.FailAll)
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult, expectedAntecedentData: dataA))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, data: dataB, expectedAntecedentData: dataA))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult, expectedAntecedentData: dataB))
+                .PipeAsync(antecedent => AddAsync(antecedent, 4, 8, ref thirdResult, throwException: true, expectedAntecedentData: dataB))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref thirdResult, expectAntecedentSuccess: false));
 
             Assert.IsFalse(result.IsSuccess());
             Assert.AreEqual(3, result.Results.Count);
@@ -215,14 +222,15 @@ namespace Nfinity.Extensions.Pipes.Test
             var firstResult = 0;
             var secondResult = 0;
             var thirdResult = 0;
+            var data = new object();
 
             var result = await AsyncPipe
-                .Start(() => AddAsync(2, 4, ref firstResult), PipeFailureBehavior.FailAll)
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult, fail: true))
-                .OnFailAsync(result => ResetAsync(result, 0, ref secondResult, expectAntecedentSuccess: false))
-                .PipeAsync(result => AddAsync(4, 8, ref thirdResult))
-                .OnFailAsync(result => ResetAsync(result, 0, ref thirdResult));
+                .Start(() => AddAsync(2, 4, ref firstResult, data: data), PipeFailureBehavior.FailAll)
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult, expectedAntecedentData: data))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, fail: true, expectedAntecedentData: data))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult, expectAntecedentSuccess: false))
+                .PipeAsync(antecedent => AddAsync(antecedent, 4, 8, ref thirdResult))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref thirdResult));
 
             Assert.IsFalse(result.IsSuccess());
             Assert.AreEqual(2, result.Results.Count);
@@ -246,9 +254,9 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var result = await AsyncPipe
                 .Start(() => AddAsync(2, 4, ref firstResult))
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult, throwException: true))
-                .OnFailAsync(result => ResetAsync(result, 0, ref secondResult, expectAntecedentSuccess: false))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, throwException: true))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult, expectAntecedentSuccess: false))
                 .Finally(() => AddAsync(4, 8, ref finallyResult));
 
             Assert.IsFalse(result.IsSuccess());
@@ -273,35 +281,10 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var result = await AsyncPipe
                 .Start(() => AddAsync(2, 4, ref firstResult))
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult))
-                .OnFailAsync(result => ResetAsync(result, 0, ref secondResult))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult))
                 .Finally(() => AddAsync(4, 8, ref finallyResult));
-
-            Assert.IsTrue(result.IsSuccess());
-            Assert.AreEqual(2, result.Results.Count);
-
-            Assert.AreEqual(2, result.FailActions.Count);
-            Assert.IsNull(result.FailActionResults);
-
-            Assert.AreEqual(6, firstResult);
-            Assert.AreEqual(10, secondResult);
-            Assert.AreEqual(12, finallyResult, "Expected the finally to always run");
-        }
-
-        [TestMethod]
-        public async Task PipeAsync_Many_WithFinally_OutOfOrder()
-        {
-            var firstResult = 0;
-            var secondResult = 0;
-            var finallyResult = 0;
-
-            var result = await AsyncPipe
-                .Start(() => AddAsync(2, 4, ref firstResult))
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult))
-                .Finally(() => AddAsync(4, 8, ref finallyResult))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult))
-                .OnFailAsync(result => ResetAsync(result, 0, ref secondResult));
 
             Assert.IsTrue(result.IsSuccess());
             Assert.AreEqual(2, result.Results.Count);
@@ -321,7 +304,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var result = await AsyncPipe
                 .Start(() => AddAsync(2, 4, ref firstResult))
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult));
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult));
 
             var state = result.GetFailureState();
             Assert.IsNull(state);
@@ -334,7 +317,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var result = await AsyncPipe
                 .Start(() => AddAsync(2, 4, ref firstResult, fail: true, failureStatusCode: HttpStatusCode.BadRequest))
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult));
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult));
 
             var state = result.GetFailureState();
             Assert.IsNotNull(state);
@@ -351,9 +334,9 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var result = await AsyncPipe
                 .Start(() => AddAsync(2, 4, ref firstResult), PipeFailureBehavior.FailAll)
-                .OnFailAsync(result => ResetAsync(result, 0, ref firstResult))
-                .PipeAsync(result => AddAsync(3, 7, ref secondResult, fail: true, failureStatusCode: HttpStatusCode.BadRequest))
-                .OnFailAsync(result => ResetAsync(result, 0, ref secondResult));
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, fail: true, failureStatusCode: HttpStatusCode.BadRequest))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult));
 
             var state = result.GetFailureState();
             Assert.IsNotNull(state);
