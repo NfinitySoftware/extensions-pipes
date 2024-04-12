@@ -17,11 +17,13 @@
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<Copyright>© 2024 Nfinity Software</Copyright>
 		<PackageTags>C# Pipelines Functional Programming</PackageTags>
-		<VersionPrefix>1.0.0</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<None Include="..\..\LICENSE.txt" Pack="true" PackagePath="">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="..\..\Readme.md" Pack="true" PackagePath="">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
