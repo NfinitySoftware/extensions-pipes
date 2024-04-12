@@ -11,19 +11,22 @@
 		<PackageId>Nfinity.Extensions.Pipes</PackageId>
 		<Title>Nfinity Extensions Pipes</Title>
 		<Authors>D.Vaughan-Scott</Authors>
-		<Authors>Nfinity Software</Authors>
+		<Company>Nfinity Software</Company>
 		<Description>A library that enables "pipelines" of functions in .NET.</Description>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<Copyright>© 2024 Nfinity Software</Copyright>
 		<PackageTags>C# Pipelines Functional Programming</PackageTags>
+		<RepositoryUrl>https://github.com/NfinitySoftware/extensions-pipes</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageReadmeFile>Readme.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\..\LICENSE.txt" Pack="true" PackagePath="">
+		<None Include="..\..\LICENSE.txt" Pack="true" PackagePath="\">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Include="..\..\Readme.md" Pack="true" PackagePath="">
+		<None Update="Readme.md" Pack="true" PackagePath="\">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
