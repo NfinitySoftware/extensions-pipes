@@ -6,10 +6,13 @@ name: "Publish NuGet"
 on: 
     workflow_dispatch:
       inputs:
+        version:
+          description: "Product version"
+          required: true
         version_suffix:
-          description: "Pre-release version suffix"
+          description: "Version pre-release suffix"
           required: false
-          default: ""
+          default: ''
     pull_request:
       branches: [ "master" ]
 
@@ -35,9 +38,18 @@ jobs:
           --no-build
           --configuration Release
           --verbosity normal
-    - name: Pack
+    - if: github.event.inputs.version_suffix != ''
+      name: Pack
       run: dotnet pack src/Nfinity.Extensions.Pipes/Nfinity.Extensions.Pipes.csproj
+          -p:VersionPrefix=${{ github.event.inputs.version }}
           --no-build
           --configuration Release
           --verbosity normal
           --version-suffix ${{ github.event.inputs.version_suffix }}
+    - if: github.event.inputs.version_suffix == ''
+      name: Pack
+      run: dotnet pack src/Nfinity.Extensions.Pipes/Nfinity.Extensions.Pipes.csproj
+          -p:Version=${{ github.event.inputs.version }}
+          --no-build
+          --configuration Release
+          --verbosity normal
