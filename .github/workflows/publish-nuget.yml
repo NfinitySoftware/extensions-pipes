@@ -39,15 +39,16 @@ jobs:
           --configuration Release
           --verbosity normal
     - if: github.event.inputs.version_suffix != ''
-      name: Pack
+      name: Pack PreRelease
       run: dotnet pack src/Nfinity.Extensions.Pipes/Nfinity.Extensions.Pipes.csproj
+          -o src/NuGet
           -p:VersionPrefix=${{ github.event.inputs.version }}
           --no-build
           --configuration Release
           --verbosity normal
           --version-suffix ${{ github.event.inputs.version_suffix }}
     - if: github.event.inputs.version_suffix == ''
-      name: Pack
+      name: Pack Release
       run: dotnet pack src/Nfinity.Extensions.Pipes/Nfinity.Extensions.Pipes.csproj
           -o src/NuGet
           -p:Version=${{ github.event.inputs.version }}
