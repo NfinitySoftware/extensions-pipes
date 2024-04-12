@@ -26,9 +26,9 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x        
+        dotnet-version: 8.0.x
     - name: Restore
-      run: dotnet restore src/Nfinity.Extensions.Pipes.sln      
+      run: dotnet restore src/Nfinity.Extensions.Pipes.sln
     - name: Build
       run: dotnet build src/Nfinity.Extensions.Pipes.sln
           --no-restore
@@ -49,7 +49,14 @@ jobs:
     - if: github.event.inputs.version_suffix == ''
       name: Pack
       run: dotnet pack src/Nfinity.Extensions.Pipes/Nfinity.Extensions.Pipes.csproj
+          -o src/NuGet
           -p:Version=${{ github.event.inputs.version }}
           --no-build
           --configuration Release
           --verbosity normal
+    - name: Publish
+      env:
+        nuget_api_key: ${{secrets.NUGET_API_KEY}}
+      run: dotnet nuget push src/NuGet/*.nupkg
+          -k $nuget_api_key
+          -s https://api.nuget.org/v3/index.json
