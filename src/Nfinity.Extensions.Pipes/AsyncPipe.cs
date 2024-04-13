@@ -1,11 +1,16 @@
-﻿using System.Threading.Tasks;
-
-namespace Nfinity.Extensions.Pipes
+﻿namespace Nfinity.Extensions.Pipes
 {
+    /// <summary>
+    /// A mechanism used to start an asynchronous pipeline.
+    /// </summary>
     public static class AsyncPipe
     {
         private const string OperationFailedMessage = "Executing the operation in async pipe failed.";
 
+        /// <summary>
+        /// Starts an asynchronous pipeline.
+        /// </summary>
+        /// <param name="first">The first method to execute.</param>
         public static async Task<PipedOperationResult> Start(Func<Task<OperationResult>> first)
         {
             var result = new PipedOperationResult();
@@ -13,6 +18,11 @@ namespace Nfinity.Extensions.Pipes
             return result;
         }
 
+        /// <summary>
+        /// Starts an asynchronous pipeline with the given failure behavior.
+        /// </summary>
+        /// <param name="first">The first method to execute.</param>
+        /// <param name="failureBehaviour">The way in which to execute failure actions in the pipeline.</param>
         public static async Task<PipedOperationResult> Start(Func<Task<OperationResult>> first, PipeFailureBehavior failureBehaviour)
         {
             var result = new PipedOperationResult(failureBehaviour);

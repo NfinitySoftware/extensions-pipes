@@ -2,8 +2,16 @@
 
 namespace Nfinity.Extensions.Pipes
 {
+    /// <summary>
+    /// Pipeline extension methods.
+    /// </summary>
     public static class PipeExtensions
     {
+        /// <summary>
+        /// An alternative method for starting a pipeline.
+        /// </summary>
+        /// <param name="first"></param>
+        /// <param name="next">The next method to execute.</param>
         public static async Task<PipedOperationResult> PipeAsync(this Func<Task<OperationResult>> first, Func<Task<OperationResult>> next)
         {
             var result = new PipedOperationResult();
@@ -17,6 +25,11 @@ namespace Nfinity.Extensions.Pipes
             return result;
         }
 
+        /// <summary>
+        /// Enqueues a method in the pipeline.
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="next">The next method to execute.</param>
         public static async Task<PipedOperationResult> PipeAsync(this Task<PipedOperationResult> result, Func<Task<OperationResult>> next)
         {
             var pipedResult = await result;
@@ -26,6 +39,11 @@ namespace Nfinity.Extensions.Pipes
             return pipedResult;
         }
 
+        /// <summary>
+        /// Enqueues a method in the pipeline.
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="next">The next method to execute, which accepts the <see cref="OperationResult"/> instance returned from its predecessor.</param>
         public static async Task<PipedOperationResult> PipeAsync(this Task<PipedOperationResult> result, Func<OperationResult, Task<OperationResult>> next)
         {
             var pipedResult = await result;
@@ -35,6 +53,11 @@ namespace Nfinity.Extensions.Pipes
             return pipedResult;
         }
 
+        /// <summary>
+        /// Enqueues a failure handler method to execute should the preceding method fail.
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="onFail">The method to execute.</param>
         public static async Task<PipedOperationResult> OnFailAsync(this Task<PipedOperationResult> result, Func<Task> onFail)
         {
             var pipedResult = await result;
@@ -46,6 +69,11 @@ namespace Nfinity.Extensions.Pipes
             return pipedResult;
         }
 
+        /// <summary>
+        /// Enqueues a failure handler method to execute should the preceding method fail.
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="onFail">The method to execute, which accepts the <see cref="OperationResult"/> instance returned from its predecessor.</param>
         public static async Task<PipedOperationResult> OnFailAsync(this Task<PipedOperationResult> result, Func<OperationResult, Task> onFail)
         {
             var pipedResult = await result;
@@ -57,6 +85,15 @@ namespace Nfinity.Extensions.Pipes
             return pipedResult;
         }
 
+        /// <summary>
+        /// Enqueues a method to execute once all other methods in the pipeline have completed.
+        /// This method should be the last specified in the chain. This method can be called only once in the pipeline setup.
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="final">The method to execute.</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when a final action has already been specified in the pipeline.
+        /// </exception>
         public static async Task<PipedOperationResult> Finally(this Task<PipedOperationResult> result, Func<Task> final)
         {
             var pipedResult = await result;
@@ -72,6 +109,7 @@ namespace Nfinity.Extensions.Pipes
 
             var firstFailed = (OperationResult)null;
             var exceptions = new List<Exception>();
+            var anyRetryable = false;
 
             for (var i = 0; i < results.Count; i++)
             {
@@ -81,7 +119,15 @@ namespace Nfinity.Extensions.Pipes
                 firstFailed ??= result;
 
                 var exception = result.Exception;
-                if (exception != null) exceptions.Add(exception);
+                if (exception != null)
+                {
+                    exceptions.Add(exception);
+                }
+
+                if (!anyRetryable && result.IsRetryable)
+                {
+                    anyRetryable = true;
+                }
             }
 
             if (firstFailed == null) return null;
@@ -91,7 +137,7 @@ namespace Nfinity.Extensions.Pipes
             var failureReason = firstFailed.FailureReason ?? exceptions[0].Message;
             var httpStatusCode = firstFailed.HttpStatusCode;
 
-            return OperationResult.Fail(failureReason, aggregateException, statusCode: httpStatusCode);
+            return OperationResult.Fail(failureReason, aggregateException, isRetryable: anyRetryable, statusCode: httpStatusCode);
         }
     }
 }

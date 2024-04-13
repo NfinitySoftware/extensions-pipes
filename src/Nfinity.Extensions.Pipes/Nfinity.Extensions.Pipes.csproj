@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <SignAssembly>True</SignAssembly>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
 	<PropertyGroup Label="NuGet">
@@ -20,6 +21,7 @@
 		<RepositoryUrl>https://github.com/NfinitySoftware/extensions-pipes</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageReadmeFile>Readme.md</PackageReadmeFile>
+		<Version>1.0.0-alpha3</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
