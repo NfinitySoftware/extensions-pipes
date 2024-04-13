@@ -13,13 +13,14 @@
 
         private readonly List<OperationResult> _results = [];
         /// <summary>
-        /// Gets a reference to the list of pipeline results.
+        /// Gets a reference to the list of pipeline results, in the order in which they were executed.
         /// </summary>
         public IReadOnlyList<OperationResult> Results => _results;
 
         private List<OperationResult> _failActionResults;
         /// <summary>
-        /// Gets a reference to the list of results of all failure actions, if any were specified or run.
+        /// Gets a reference to the list of results of all failure actions, in the order in which they were executed,
+        /// if any were specified or run.
         /// </summary>
         public IReadOnlyList<OperationResult> FailActionResults => _failActionResults;
 

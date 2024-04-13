@@ -1,5 +1,4 @@
-﻿using Nfinity.Extensions.Pipes.Extensions;
-using System.Net;
+﻿using System.Net;
 
 namespace Nfinity.Extensions.Pipes
 {
@@ -78,19 +77,5 @@ namespace Nfinity.Extensions.Pipes
                 IsRetryable = isRetryable, 
                 HttpStatusCode = statusCode 
             };
-
-        //DVS: keep this somewhere for methods that don't return operation result (feature still to be coded)?
-        public static OperationResult Resolve(params Task<OperationResult>[] tasks)
-        {
-            if (tasks.IsNullOrEmpty()) return null;
-
-            var failed = tasks.FirstOrDefault(t => t != null && (!t.IsCompletedSuccessfully || t.IsFaulted || !t.Result.IsSuccess));
-            if (failed == null) return Success();
-
-            var message = failed.Result.FailureReason ?? failed.Result.Exception?.Message;
-            var exception = failed.Result.Exception ?? failed.Exception;
-
-            return Fail(message, exception, statusCode: failed.Result.HttpStatusCode);
-        }
     }
 }

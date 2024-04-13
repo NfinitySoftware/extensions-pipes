@@ -26,16 +26,16 @@
 #### Notes
 Use of Extensions.Pipes is based on use of the `OperationResult` type. Each chained method should return `Task<OperationResult>`.
 
-It's recommended that chained methods do not throw exceptions, but rather return an `OperationResult` instance using `OperationResult.Fail(..)`. More useful information can be returned from methods in this way.
+It's recommended that chained methods do not throw exceptions, but rather return an `OperationResult` instance using `OperationResult.Fail(..)`. More useful information can be returned from methods in this way, but it depends on the desired behavior.
 
-Methods chained in the pipeline should follow a logical order and progression. Typically, starting a pipeline is done via the `AsyncPipe.Start` method, followed by multiple `PipeAsync` calls, and perhaps a call to `Finally`. Any failure actions should be chained directly after the piped method they are intended to handle. See the first example below.
+Methods chained in the pipeline should follow a logical order and progression. Typically, starting a pipeline is done via the `AsyncPipe.Start` method, followed by multiple `PipeAsync` calls, and perhaps a call to `Finally`. Any failure actions, specified via `OnFailAsync`, should be chained directly after the piped method they are intended to handle. See the first example below.
 
 #### `PipeFailureBehavior`
 
 The `PipeFailureBehavior` enumeration determines how failed actions are run in the pipeline, or rather *which* are run. There are two options:
 
-- `FailLastOnly`: The default behavior. Only the failure action associated with the failed, piped method will be run. In the first example below, if `SetUserSecurityAsync` failed, only `DeleteUserSecurityAsync` would be called.
-- `FailAll`: All failure actions up the stack will be called in succession (from the last to the first). Again, in the first example below, if `SetUserSecurityAsync` failed, `DeleteUserSecurityAsync` would be called, then `DeleteUserAsync`.
+- `FailLastOnly`: The default behavior. Only the failure action associated with the failed, piped method will be run. In the first example below, if *SetUserSecurityAsync* failed, only *DeleteUserSecurityAsync* would be called.
+- `FailAll`: All failure actions up the stack will be called in succession (from the last to the first). Again, in the first example below, if *SetUserSecurityAsync* failed, *DeleteUserSecurityAsync* would be called, then *DeleteUserAsync*.
 
 #### Examples:
 ```csharp
@@ -52,7 +52,7 @@ public async Task ExecutePipelineAsync(string userName, string fullName, string 
     //Example 2. It's also possible to specify one failure action for a pipeline, 
     //which will be called if any action fails.
     result = await AsyncPipe
-        .Start(() => CreateUserAsync(userName, fullName, email), PipeFailureBehavior.FailAll)
+        .Start(() => CreateUserAsync(userName, fullName, email))
         .PipeAsync(() => SetUserSecurityAsync(userName, fullName, email))
         .OnFailAsync(() => DeleteUserSecurityAsync(userName))
         .Finally(() => CleanupTemporaryState(userName, fullName, email));
