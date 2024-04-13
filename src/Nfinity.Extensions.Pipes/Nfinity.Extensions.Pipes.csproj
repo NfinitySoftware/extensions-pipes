@@ -21,7 +21,6 @@
 		<RepositoryUrl>https://github.com/NfinitySoftware/extensions-pipes</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageReadmeFile>Readme.md</PackageReadmeFile>
-		<Version>1.0.0-alpha3</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
