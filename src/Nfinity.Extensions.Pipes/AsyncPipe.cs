@@ -107,7 +107,6 @@
 
             var onlyFailLast = result.Options.ShouldOnlyFailLast;
             var lastIndex = result.FailActions.Count - 1;
-            var resultStack = new Stack<TaskResult>(result.Results);
 
             for (var i = lastIndex; i >= 0; i--)
             {
