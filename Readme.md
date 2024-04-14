@@ -24,10 +24,9 @@
 - Maintain clean code principles, especially in complex scenario method chaining.
 
 ### Using Extensions.Pipes
-#### Notes
-Use of Extensions.Pipes is either based on:
+Methods invoked via Extensions.Pipes are based on either:
 -  Any awaitable method that returns `Task`,
--  Use of the `OperationResult` type, where chained method returns `Task<OperationResult>`. Use this structure when more specific, richer information is needed about the success or failure of methods.
+-  Use of the `OperationResult` type, where chained methods return `Task<OperationResult>`. Use this structure when more specific, richer information is needed about the success or failure of methods.
 
 Methods chained in the pipeline should follow a logical order and progression. Typically, starting a pipeline is done via the `AsyncPipe.Start` method, followed by multiple `PipeAsync` calls, and perhaps a call to `Finally`. Any failure actions, specified via `OnFailAsync`, should be chained directly after the piped method they are intended to handle. See the first example below.
 
