@@ -5,6 +5,9 @@
 - [How can I use Extensions.Pipes](#using-extensionspipes)?
 - [License](#license)
 
+#### NuGet Package 
+> Install the package from [nuget.org](https://www.nuget.org/packages/Nfinity.Extensions.Pipes)
+
 ### What is Extensions.Pipes?
 *Extensions.Pipes* provides a mechanism for asynchronous pipeline processing in .NET, allowing multiple method calls to be combined into a single pipeline. This is usually provided by the `|` operator in many functional languages, but *Extensions.Pipes* provides a mechanism reminiscent of LINQ to achieve the same.
 
