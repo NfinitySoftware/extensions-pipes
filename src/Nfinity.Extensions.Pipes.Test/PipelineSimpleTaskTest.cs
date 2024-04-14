@@ -3,11 +3,10 @@
 namespace Nfinity.Extensions.Pipes.Test
 {
     [TestClass]
-    public class PipelineTest
+    public class PipelineSimpleTaskTest
     {
         private const string ExceptionMessage = "Manual exception";
-        private const string OpFailedMessage = "Operation failed";
-
+       
         [TestMethod]
         public async Task PipeAsync_TwoActions_Success()
         {
@@ -113,7 +112,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             Assert.IsNotNull(result.FailActionResults);
             Assert.AreEqual(1, result.FailActionResults.Count);
-            
+
             Assert.AreEqual(0, firstResult, "Expected the fail action to reset the value");
         }
 
@@ -268,6 +267,31 @@ namespace Nfinity.Extensions.Pipes.Test
         }
 
         [TestMethod]
+        public async Task PipeAsync_Many_WithFinally_OutOfOrder()
+        {
+            var firstResult = 0;
+            var secondResult = 0;
+            var finallyResult = 0;
+
+            var result = await AsyncPipe
+                .Start(() => AddAsync(2, 4, ref firstResult))
+                .OnFailAsync(() => ResetAsync(0, ref firstResult))
+                .Finally(() => AddAsync(4, 8, ref finallyResult))
+                .PipeAsync(() => AddAsync(3, 7, ref secondResult))
+                .OnFailAsync(() => ResetAsync(0, ref secondResult));
+
+            Assert.IsTrue(result.IsSuccess());
+            Assert.AreEqual(2, result.Results.Count);
+
+            Assert.AreEqual(2, result.FailActions.Count);
+            Assert.IsNull(result.FailActionResults);
+
+            Assert.AreEqual(6, firstResult);
+            Assert.AreEqual(10, secondResult);
+            Assert.AreEqual(12, finallyResult, "Expected the finally to always run");
+        }
+
+        [TestMethod]
         public async Task PipeAsync_GetFailureState_NoneFailed()
         {
             var firstResult = 0;
@@ -291,9 +315,7 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var state = result.GetFailureState();
             Assert.IsNotNull(state);
-            Assert.AreEqual(HttpStatusCode.BadRequest, state.HttpStatusCode);
             Assert.IsNotNull(state.Exception);
-            Assert.AreEqual(OpFailedMessage, state.FailureReason);
         }
 
         [TestMethod]
@@ -310,11 +332,8 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var state = result.GetFailureState();
             Assert.IsNotNull(state);
-            Assert.AreEqual(HttpStatusCode.BadRequest, state.HttpStatusCode);
             Assert.IsNotNull(state.Exception);
-            Assert.IsInstanceOfType<AggregateException>(state.Exception);
             Assert.AreEqual(1, state.Exception.InnerExceptions.Count);
-            Assert.AreEqual(OpFailedMessage, state.FailureReason);
         }
 
         [TestMethod]
@@ -331,10 +350,8 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var state = result.GetFailureState();
             Assert.IsNotNull(state);
-            Assert.AreEqual(HttpStatusCode.BadRequest, state.HttpStatusCode);
             Assert.IsNotNull(state.Exception);
             Assert.AreEqual(3, state.Exception.InnerExceptions.Count);
-            Assert.AreEqual(OpFailedMessage, state.FailureReason);
         }
 
         [TestMethod]
@@ -353,10 +370,8 @@ namespace Nfinity.Extensions.Pipes.Test
 
             var state = result.GetFailureState();
             Assert.IsNotNull(state);
-            Assert.AreEqual(HttpStatusCode.BadRequest, state.HttpStatusCode);
             Assert.IsNotNull(state.Exception);
             Assert.AreEqual(4, state.Exception.InnerExceptions.Count);
-            Assert.AreEqual(OpFailedMessage, state.FailureReason);
         }
 
         [TestMethod]
@@ -381,14 +396,14 @@ namespace Nfinity.Extensions.Pipes.Test
             Assert.AreEqual(1, state.Exception.InnerExceptions.Count);
         }
 
-        private static Task<OperationResult> AddAsync(int x, int y, ref int result, bool fail = false, bool throwException = false,
+        private static Task AddAsync(int x, int y, ref int result, bool fail = false, bool throwException = false,
             HttpStatusCode failureStatusCode = HttpStatusCode.InternalServerError)
         {
             if (throwException) throw new HttpRequestException(ExceptionMessage, new Exception(ExceptionMessage), failureStatusCode);
-            if (fail) return Task.FromResult(OperationResult.Fail(new Exception(ExceptionMessage), OpFailedMessage, statusCode: failureStatusCode));
+            if (fail) return Task.FromException(new Exception(ExceptionMessage));
 
             result = x + y;
-            return Task.FromResult(OperationResult.Success());
+            return Task.CompletedTask;
         }
 
         private static Task ResetAsync(int value, ref int result, bool throwException = false)

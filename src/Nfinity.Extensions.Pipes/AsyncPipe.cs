@@ -5,8 +5,6 @@
     /// </summary>
     public static class AsyncPipe
     {
-        private const string OperationFailedMessage = "Executing the operation in async pipe failed.";
-
         /// <summary>
         /// Starts an asynchronous pipeline.
         /// </summary>
@@ -30,6 +28,29 @@
             return result;
         }
 
+        /// <summary>
+        /// Starts an asynchronous pipeline.
+        /// </summary>
+        /// <param name="first">The first method to execute.</param>
+        public static async Task<PipedTaskResult> Start(Func<Task> first)
+        {
+            var result = new PipedTaskResult();
+            await ExecuteAsync(result, first);
+            return result;
+        }
+
+        /// <summary>
+        /// Starts an asynchronous pipeline with the given failure behavior.
+        /// </summary>
+        /// <param name="first">The first method to execute.</param>
+        /// <param name="failureBehaviour">The way in which to execute failure actions in the pipeline.</param>
+        public static async Task<PipedTaskResult> Start(Func<Task> first, PipeFailureBehavior failureBehaviour)
+        {
+            var result = new PipedTaskResult(failureBehaviour);
+            await ExecuteAsync(result, first);
+            return result;
+        }
+
         internal static async Task ExecuteAsync(PipedOperationResult result, Func<Task<OperationResult>> asyncOperation)
         {
             var operationResult = await ExecuteAsync(asyncOperation);
@@ -41,6 +62,12 @@
             var lastResult = result.GetLastResult();
             var operationResult = await ExecuteAsync(asyncOperation, lastResult);
             result.PushResult(operationResult);
+        }
+
+        internal static async Task ExecuteAsync(PipedTaskResult result, Func<Task> asyncOperation)
+        {
+            var taskResult = await ExecuteAsync(asyncOperation);
+            result.PushResult(taskResult);
         }
 
         internal static async Task ExecuteFailActionAsync(PipedOperationResult result)
@@ -58,7 +85,7 @@
 
                 if (failAction.Action != null)
                 {
-                    var failOperationResult = await ExecuteAsync(failAction.Action);
+                    var failOperationResult = await ExecuteWithOperationResultAsync(failAction.Action);
                     result.PushFailActionResult(failOperationResult);
                 }
                 else if (failAction.ActionWithResultArg != null)
@@ -74,7 +101,37 @@
             result.HasExecutedFailActions = true;
         }
 
+        internal static async Task ExecuteFailActionAsync(PipedTaskResult result)
+        {
+            if (result.HasExecutedFailActions) return;
+
+            var onlyFailLast = result.Options.ShouldOnlyFailLast;
+            var lastIndex = result.FailActions.Count - 1;
+            var resultStack = new Stack<TaskResult>(result.Results);
+
+            for (var i = lastIndex; i >= 0; i--)
+            {
+                var failAction = result.FailActions[i];
+                if (failAction.IsEmpty) continue;
+
+                if (failAction.Action != null)
+                {
+                    var failOperationResult = await ExecuteAsync(failAction.Action);
+                    result.PushFailActionResult(failOperationResult);
+                }
+
+                if (i == lastIndex && onlyFailLast) break;
+            }
+
+            result.HasExecutedFailActions = true;
+        }
+
         internal static async Task ExecuteFinallyAsync(PipedOperationResult result, Func<Task> final)
+        {
+            result.FinalResult = await ExecuteWithOperationResultAsync(final);
+        }
+
+        internal static async Task ExecuteFinallyAsync(PipedTaskResult result, Func<Task> final)
         {
             result.FinalResult = await ExecuteAsync(final);
         }
@@ -88,7 +145,7 @@
             }
             catch (Exception ex)
             {
-                return OperationResult.Fail(OperationFailedMessage, ex);
+                return OperationResult.Fail(ex);
             }
         }
 
@@ -101,11 +158,11 @@
             }
             catch (Exception ex)
             {
-                return OperationResult.Fail(OperationFailedMessage, ex);
+                return OperationResult.Fail(ex);
             }
         }
 
-        private static async Task<OperationResult> ExecuteAsync(Func<Task> asyncOperation)
+        private static async Task<OperationResult> ExecuteWithOperationResultAsync(Func<Task> asyncOperation)
         {
             try
             {
@@ -114,7 +171,7 @@
             }
             catch (Exception ex)
             {
-                return OperationResult.Fail(OperationFailedMessage, ex);
+                return OperationResult.Fail(ex);
             }
         }
 
@@ -127,7 +184,20 @@
             }
             catch (Exception ex)
             {
-                return OperationResult.Fail(OperationFailedMessage, ex);
+                return OperationResult.Fail(ex);
+            }
+        }
+
+        private static async Task<TaskResult> ExecuteAsync(Func<Task> asyncOperation)
+        {
+            try
+            {
+                await asyncOperation();
+                return TaskResult.Success();
+            }
+            catch (Exception ex)
+            {
+                return TaskResult.Fail(ex);
             }
         }
     }

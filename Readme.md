@@ -16,6 +16,7 @@
 - The behavior of the invocation of pipeline failure actions can be customised. [See the `PipeFailureBehavior` enumeration.](#pipefailurebehavior)
 - A `finally` action can be specified, completing a *try-catch-finally* construct in the pipeline, and which is always invoked whether pipeline actions succeed or fail.
 - An aggregate result is made available as the result of the pipeline, and conditional code can be written based on its overall success or failure.
+- State of the aggregate of failures is also available, in the case that any operation in the pipeline failed.
 
 ### Why use Extensions.Pipes?
 - Massively reduce the amount of code required to reliably execute multiple methods in succession, where each is dependent on the success of its predecessor.
@@ -24,9 +25,9 @@
 
 ### Using Extensions.Pipes
 #### Notes
-Use of Extensions.Pipes is based on use of the `OperationResult` type. Each chained method should return `Task<OperationResult>`.
-
-It's recommended that chained methods do not throw exceptions, but rather return an `OperationResult` instance using `OperationResult.Fail(..)`. More useful information can be returned from methods in this way, but it depends on the desired behavior.
+Use of Extensions.Pipes is either based on:
+-  Any awaitable method that returns `Task`,
+-  Use of the `OperationResult` type, where chained method returns `Task<OperationResult>`. Use this structure when more specific, richer information is needed about the success or failure of methods.
 
 Methods chained in the pipeline should follow a logical order and progression. Typically, starting a pipeline is done via the `AsyncPipe.Start` method, followed by multiple `PipeAsync` calls, and perhaps a call to `Finally`. Any failure actions, specified via `OnFailAsync`, should be chained directly after the piped method they are intended to handle. See the first example below.
 
@@ -34,7 +35,7 @@ Methods chained in the pipeline should follow a logical order and progression. T
 
 The `PipeFailureBehavior` enumeration determines how failed actions are run in the pipeline, or rather *which* are run. There are two options:
 
-- `FailLastOnly`: The default behavior. Only the failure action associated with the failed, piped method will be run. In the first example below, if *SetUserSecurityAsync* failed, only *DeleteUserSecurityAsync* would be called.
+- `FailLastOnly`: The default behavior. Only the failure action associated with the last failed method will be run. In the first example below, if *SetUserSecurityAsync* failed, only *DeleteUserSecurityAsync* would be called.
 - `FailAll`: All failure actions up the stack will be called in succession (from the last to the first). Again, in the first example below, if *SetUserSecurityAsync* failed, *DeleteUserSecurityAsync* would be called, then *DeleteUserAsync*.
 
 #### Examples:
@@ -70,6 +71,12 @@ public async Task ExecutePipelineAsync(string userName, string fullName, string 
         .Start(() => CreateUserAsync(userName, fullName, email), PipeFailureBehavior.FailAll)
         .PipeAsync(antecedent => SetUserSecurityAsync(userName, fullName, email, antecedent))
         .Finally(() => CleanupTemporaryState(userName, fullName, email));
+    
+    //Example 5. A pipeline using methods that return Task. No antecedent is available 
+    //in this case.
+    var taskResult = await AsyncPipe
+        .Start(() => CreateSimpleUserAsync(userName, email))
+        .PipeAsync(() => SetSimpleUserSecurityAsync(userName, email));
 
     //Conditional code based on the aggregated result
     if (!result.IsSuccess())
@@ -102,6 +109,12 @@ private Task<OperationResult> DeleteUserAsync(string userName)
     => Task.FromResult(OperationResult.Success());
 
 private Task<OperationResult> DeleteUserSecurityAsync(string userName)
+    => Task.FromResult(OperationResult.Success());
+
+private Task CreateSimpleUserAsync(string userName, string email)
+    => Task.FromResult(OperationResult.Success());
+
+private Task SetSimpleUserSecurityAsync(string userName, string email)
     => Task.FromResult(OperationResult.Success());
 ```
 

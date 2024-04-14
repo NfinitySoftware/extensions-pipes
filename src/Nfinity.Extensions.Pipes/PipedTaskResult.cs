@@ -5,7 +5,7 @@ namespace Nfinity.Extensions.Pipes
     /// <summary>
     /// Represents the overall result of an asynchronous pipeline.
     /// </summary>
-    public sealed class PipedOperationResult
+    public class PipedTaskResult
     {
         /// <summary>
         /// Gets a reference to a <see cref="PipedOperationOptions"/> instance, representing the
@@ -13,23 +13,23 @@ namespace Nfinity.Extensions.Pipes
         /// </summary>
         public PipedOperationOptions Options { get; }
 
-        private readonly List<OperationResult> _results = [];
+        private readonly List<TaskResult> _results = [];
         /// <summary>
         /// Gets a reference to the list of pipeline results, in the order in which they were executed.
         /// </summary>
-        public IReadOnlyList<OperationResult> Results => _results;
+        public IReadOnlyList<TaskResult> Results => _results;
 
-        private List<OperationResult> _failActionResults;
+        private List<TaskResult> _failActionResults;
         /// <summary>
         /// Gets a reference to the list of results of all failure actions, in the order in which they were executed,
         /// if any were specified or run.
         /// </summary>
-        public IReadOnlyList<OperationResult> FailActionResults => _failActionResults;
+        public IReadOnlyList<TaskResult> FailActionResults => _failActionResults;
 
         /// <summary>
         /// Gets a reference to the result of the 'Finally' action, if one was specified.
         /// </summary>
-        public OperationResult FinalResult { get; internal set; }
+        public TaskResult FinalResult { get; internal set; }
 
         private readonly List<FailAction> _failActions = [];
         internal IReadOnlyList<FailAction> FailActions => _failActions;
@@ -39,55 +39,52 @@ namespace Nfinity.Extensions.Pipes
 
         internal bool HasExecutedFailActions { get; set; }
 
-        internal PipedOperationResult()
+        internal PipedTaskResult()
         {
             Options = new PipedOperationOptions();
         }
 
-        internal PipedOperationResult(PipeFailureBehavior failureBehaviour)
+        internal PipedTaskResult(PipeFailureBehavior failureBehaviour)
         {
             Options = new PipedOperationOptions(failureBehaviour);
         }
 
         /// <summary>
-        /// Compiles the results of all failed pipeline actions and returns a <see cref="OperationFailureState"/> instance representing the result.
+        /// Compiles the results of all failed pipeline actions and returns a <see cref="TaskFailureState"/> instance representing the result.
         /// Returns null if no actions were run, or if all actions were successful.
         /// </summary>
-        public OperationFailureState GetFailureState()
+        public TaskFailureState GetFailureState()
         {
             if (IsSuccess()) return null;
 
             var compiledResult = CompileFailResult();
-            return OperationFailureState.FromResult(compiledResult);
+            return TaskFailureState.FromResult(compiledResult);
         }
 
         /// <summary>
         /// Returns a value indicating whether the pipeline was an overall success, i.e., no exceptions occurred,
-        /// and no <see cref="OperationResult"/> instances were returned by executed methods where <see cref="OperationResult.IsSuccess"/>
+        /// and no <see cref="TaskResult"/> instances were returned by executed methods where <see cref="TaskResult.IsSuccess"/>
         /// was false.
         /// </summary>
         public bool IsSuccess()
             => _results.LastOrDefault().IsNullOrSuccess() && FinalResult.IsNullOrSuccess();
 
-        internal OperationResult GetLastResult()
+        internal TaskResult GetLastResult()
             => _results.Count > 0 ? _results[^1] : null;
 
-        internal void PushResult(OperationResult result)
+        internal void PushResult(TaskResult result)
         {
             _results.Add(result);
             _failActions.Add(FailAction.Empty);
         }
 
-        internal void PushFailActionResult(OperationResult result)
+        internal void PushFailActionResult(TaskResult result)
         {
             _failActionResults ??= [];
             _failActionResults.Add(result);
         }
 
         internal void PushFailAction(Func<Task> action)
-            => PushFailAction(new FailAction(action));
-
-        internal void PushFailAction(Func<OperationResult, Task> action)
             => PushFailAction(new FailAction(action));
 
         internal void PushFinalAction(Func<Task> final)
@@ -102,41 +99,28 @@ namespace Nfinity.Extensions.Pipes
             _failActions[index] = failAction;
         }
 
-        internal OperationResult CompileFailResult()
+        internal TaskResult CompileFailResult()
         {
             if (_results.IsNullOrEmpty()) return null;
 
             var exceptions = new List<Exception>();
 
-            var haveFailures = CompileFailures(_results, exceptions, out var isAnyOpRetryable, out var firstFailed);
-            var haveFailedFailureActions = CompileFailures(_failActionResults, exceptions, out var isAnyFailureActionRetryable, out var firstFailureActionResult);
-            var haveFailedFinal = CompileFailures([FinalResult], exceptions, out var isFinalActionRetryable, out var failedFinal);
+            var haveFailures = CompileFailures(_results, exceptions);
+            var haveFailedFailureActions = CompileFailures(_failActionResults, exceptions);
+            var haveFailedFinal = CompileFailures([FinalResult], exceptions);
 
             if (!haveFailures && !haveFailedFailureActions && !haveFailedFinal) return null;
 
-            var first = firstFailed ?? firstFailureActionResult ?? failedFinal;
-            var anyRetryable = isAnyOpRetryable || isAnyFailureActionRetryable || isFinalActionRetryable;
-
             var aggregateException = exceptions.Count == 0 ? null : new AggregateException(exceptions);
-            var failureReason = first.FailureReason ?? exceptions.FirstOrDefault()?.Message;
-            var httpStatusCode = first.HttpStatusCode;
 
-            return OperationResult.Fail(aggregateException, failureReason, isRetryable: anyRetryable, statusCode: httpStatusCode);
+            return TaskResult.Fail(aggregateException);
         }
 
-        private static bool CompileFailures(IReadOnlyList<OperationResult> results, List<Exception> exceptions, 
-            out bool isAnyOperationRetryable, out OperationResult firstFailedResult)
+        private static bool CompileFailures(IReadOnlyList<TaskResult> results, List<Exception> exceptions)
         {
-            if (results.IsNullOrEmpty())
-            {
-                isAnyOperationRetryable = false;
-                firstFailedResult = null;
-                return false;
-            }
+            if (results.IsNullOrEmpty()) return false;
 
-            var firstFailed = (OperationResult)null;
-            var isAnyRetryable = false;
-
+            var firstFailed = (TaskResult)null;
             for (var i = 0; i < results.Count; i++)
             {
                 var result = results[i];
@@ -149,15 +133,8 @@ namespace Nfinity.Extensions.Pipes
                 {
                     exceptions.Add(exception);
                 }
-
-                if (!isAnyRetryable && result.IsRetryable)
-                {
-                    isAnyRetryable = true;
-                }
             }
 
-            firstFailedResult = firstFailed;
-            isAnyOperationRetryable = isAnyRetryable;
             return firstFailed != null;
         }
     }

@@ -59,14 +59,14 @@ namespace Nfinity.Extensions.Pipes
         /// Creates and returns an instance of <see cref="OperationResult"/> that represents a failed operation,
         /// with the given parameters.
         /// </summary>
-        /// <param name="reason">A descriptive reason for which the operation failed.</param>
         /// <param name="exception">The exception that was caught or created, if any.</param>
+        /// <param name="reason">A descriptive reason for which the operation failed.</param>
         /// <param name="data">
         /// The data that represents some useful state that can be passed forward to the next method in the pipeline.
         /// </param>
         /// <param name="isRetryable">Whether the operation can be retried once the pipeline has completed.</param>
         /// <param name="statusCode">The HTTP status code associated with the failed state of the operation.</param>
-        public static OperationResult Fail(string reason, Exception exception = null, object data = null, 
+        public static OperationResult Fail(Exception exception = null, string reason = null, object data = null, 
             bool isRetryable = true, HttpStatusCode statusCode = HttpStatusCode.InternalServerError)
             => new() 
             { 

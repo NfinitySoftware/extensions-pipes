@@ -3,10 +3,10 @@
 namespace Nfinity.Extensions.Pipes.Test
 {
     [TestClass]
-    public class PipelineWithAntecedentResultTest
+    public class PipelineForwardResultTest
     {
-        private const string _exceptionMessage = "Manual exception";
-        private const string _opFailedMessage = "Operation failed";
+        private const string ExceptionMessage = "Manual exception";
+        private const string OpFailedMessage = "Operation failed";
 
         [TestMethod]
         public async Task PipeAsync_TwoActions_Success()
@@ -323,7 +323,7 @@ namespace Nfinity.Extensions.Pipes.Test
             Assert.IsNotNull(state);
             Assert.AreEqual(HttpStatusCode.BadRequest, state.HttpStatusCode);
             Assert.IsNotNull(state.Exception);
-            Assert.AreEqual(_opFailedMessage, state.FailureReason);
+            Assert.AreEqual(OpFailedMessage, state.FailureReason);
         }
 
         [TestMethod]
@@ -336,22 +336,85 @@ namespace Nfinity.Extensions.Pipes.Test
                 .Start(() => AddAsync(2, 4, ref firstResult), PipeFailureBehavior.FailAll)
                 .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult))
                 .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, fail: true, failureStatusCode: HttpStatusCode.BadRequest))
-                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult));
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult, expectAntecedentSuccess: false));
 
             var state = result.GetFailureState();
             Assert.IsNotNull(state);
             Assert.AreEqual(HttpStatusCode.BadRequest, state.HttpStatusCode);
             Assert.IsNotNull(state.Exception);
-            Assert.IsInstanceOfType<AggregateException>(state.Exception);
-            Assert.AreEqual(1, ((AggregateException)state.Exception).InnerExceptions.Count);
-            Assert.AreEqual(_opFailedMessage, state.FailureReason);
+            Assert.AreEqual(1, state.Exception.InnerExceptions.Count);
+            Assert.AreEqual(OpFailedMessage, state.FailureReason);
+        }
+
+        [TestMethod]
+        public async Task PipeAsync_GetFailureState_FailureActionsFail_FailAll()
+        {
+            var firstResult = 0;
+            var secondResult = 0;
+
+            var result = await AsyncPipe
+                .Start(() => AddAsync(2, 4, ref firstResult), PipeFailureBehavior.FailAll)
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult, throwException: true))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, fail: true, failureStatusCode: HttpStatusCode.BadRequest))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult, throwException: true, expectAntecedentSuccess: false));
+
+            var state = result.GetFailureState();
+            Assert.IsNotNull(state);
+            Assert.AreEqual(HttpStatusCode.BadRequest, state.HttpStatusCode);
+            Assert.IsNotNull(state.Exception);
+            Assert.AreEqual(3, state.Exception.InnerExceptions.Count);
+            Assert.AreEqual(OpFailedMessage, state.FailureReason);
+        }
+
+        [TestMethod]
+        public async Task PipeAsync_GetFailureState_FailureAndFinalActionsFail_FailAll()
+        {
+            var firstResult = 0;
+            var secondResult = 0;
+            var finallyResult = 0;
+
+            var result = await AsyncPipe
+                .Start(() => AddAsync(2, 4, ref firstResult), PipeFailureBehavior.FailAll)
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult, throwException: true))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult, fail: true, failureStatusCode: HttpStatusCode.BadRequest))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult, throwException: true, expectAntecedentSuccess: false))
+                .Finally(() => AddAsync(4, 8, ref finallyResult, throwException: true));
+
+            var state = result.GetFailureState();
+            Assert.IsNotNull(state);
+            Assert.AreEqual(HttpStatusCode.BadRequest, state.HttpStatusCode);
+            Assert.IsNotNull(state.Exception);
+            Assert.AreEqual(4, state.Exception.InnerExceptions.Count);
+            Assert.AreEqual(OpFailedMessage, state.FailureReason);
+        }
+
+        [TestMethod]
+        public async Task PipeAsync_GetFailureState_OnlyFinallyFailed()
+        {
+            var firstResult = 0;
+            var secondResult = 0;
+            var finallyResult = 0;
+
+            var result = await AsyncPipe
+                .Start(() => AddAsync(2, 4, ref firstResult))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref firstResult))
+                .PipeAsync(antecedent => AddAsync(antecedent, 3, 7, ref secondResult))
+                .OnFailAsync(antecedent => ResetAsync(antecedent, 0, ref secondResult))
+                .Finally(() => AddAsync(4, 8, ref finallyResult, throwException: true));
+
+            Assert.IsFalse(result.IsSuccess());
+
+            var state = result.GetFailureState();
+            Assert.IsNotNull(state);
+            Assert.IsNotNull(state.Exception);
+            Assert.AreEqual(1, state.Exception.InnerExceptions.Count);
         }
 
         private static Task<OperationResult> AddAsync(int x, int y, ref int result, bool fail = false, bool throwException = false,
             HttpStatusCode failureStatusCode = HttpStatusCode.InternalServerError, object data = null)
         {
-            if (throwException) throw new HttpRequestException(_exceptionMessage, new Exception(_exceptionMessage), failureStatusCode);
-            if (fail) return Task.FromResult(OperationResult.Fail(_opFailedMessage, new Exception(_exceptionMessage), statusCode: failureStatusCode));
+            if (throwException) throw new HttpRequestException(ExceptionMessage, new Exception(ExceptionMessage), failureStatusCode);
+            if (fail) return Task.FromResult(OperationResult.Fail(new Exception(ExceptionMessage), OpFailedMessage, statusCode: failureStatusCode));
 
             result = x + y;
             return Task.FromResult(OperationResult.Success(data));
@@ -364,18 +427,21 @@ namespace Nfinity.Extensions.Pipes.Test
             Assert.IsTrue(antecedentResult.IsSuccess);
             Assert.AreSame(expectedAntecedentData, antecedentResult.Data);
 
-            if (throwException) throw new HttpRequestException(_exceptionMessage, new Exception(_exceptionMessage), failureStatusCode);
-            if (fail) return Task.FromResult(OperationResult.Fail(_opFailedMessage, new Exception(_exceptionMessage), statusCode: failureStatusCode));
+            if (throwException) throw new HttpRequestException(ExceptionMessage, new Exception(ExceptionMessage), failureStatusCode);
+            if (fail) return Task.FromResult(OperationResult.Fail(new Exception(ExceptionMessage), OpFailedMessage, statusCode: failureStatusCode));
 
             result = x + y;
             return Task.FromResult(OperationResult.Success(data));
         }
 
-        private static Task ResetAsync(OperationResult antecedentResult, int value, ref int result, bool expectAntecedentSuccess = true, object expectedAntecedentData = null)
+        private static Task ResetAsync(OperationResult antecedentResult, int value, ref int result, bool throwException = false,
+            bool expectAntecedentSuccess = true, object expectedAntecedentData = null)
         {
             Assert.IsNotNull(antecedentResult);
             Assert.AreEqual(expectAntecedentSuccess, antecedentResult.IsSuccess);
             Assert.AreSame(expectedAntecedentData, antecedentResult.Data);
+
+            if (throwException) throw new HttpRequestException(ExceptionMessage, new Exception(ExceptionMessage));
 
             result = value;
             return Task.CompletedTask;

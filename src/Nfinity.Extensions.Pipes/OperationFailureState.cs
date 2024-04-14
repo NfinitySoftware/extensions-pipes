@@ -15,9 +15,10 @@ namespace Nfinity.Extensions.Pipes
         public string FailureReason { get; init; }
 
         /// <summary>
-        /// Gets a reference to the <see cref="System.Exception"/> instance associated with the first operation that failed.
+        /// Gets a reference to an <see cref="AggregateException"/> instance containing the exceptions associated 
+        /// with all operations that failed.
         /// </summary>
-        public Exception Exception { get; init; }
+        public AggregateException Exception { get; init; }
 
         /// <summary>
         /// Gets the <see cref="System.Net.HttpStatusCode"/> of the first operation that failed.
@@ -33,7 +34,7 @@ namespace Nfinity.Extensions.Pipes
             => result == null ? null : new() 
             { 
                 FailureReason = result.FailureReason, 
-                Exception = result.Exception, 
+                Exception = result.Exception as AggregateException,
                 HttpStatusCode = result.HttpStatusCode,
                 IsAnyRetryable = result.IsRetryable 
             };
