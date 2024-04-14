@@ -13,8 +13,6 @@ on:
           description: "Version pre-release suffix"
           required: false
           default: ''
-    pull_request:
-      branches: [ "master" ]
 
 jobs:
   build:
